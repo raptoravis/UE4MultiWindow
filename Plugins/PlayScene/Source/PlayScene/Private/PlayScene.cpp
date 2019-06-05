@@ -15,38 +15,48 @@
 
 void FPlaySceneModule::StartupModule()
 {
-	// Initialize play button ui style
-	FPlaySceneStyle::Initialize();
-	FPlaySceneStyle::ReloadTextures();
-
-	// Register play capture commands
-	FPlaySceneCommands::Register();
-	PluginCommands = MakeShareable(new FUICommandList);
-
-	// Add play capture button command
-	PluginCommands->MapAction(
-		FPlaySceneCommands::Get().OpenPluginWindow,
-		FExecuteAction::CreateRaw(this, &FPlaySceneModule::PluginButtonClicked),
-		FCanExecuteAction());
-		
-	FLevelEditorModule& LevelEditorModule = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
-		
-	// Add play capture button to editor
+	if (GIsEditor)
 	{
-		TSharedPtr<FExtender> ToolbarExtender = MakeShareable(new FExtender);
-		ToolbarExtender->AddToolBarExtension("Settings", EExtensionHook::After, PluginCommands, FToolBarExtensionDelegate::CreateRaw(this, &FPlaySceneModule::AddToolbarExtension));
-		
-		LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
+		// Initialize play button ui style
+		FPlaySceneStyle::Initialize();
+		FPlaySceneStyle::ReloadTextures();
+
+		// Register play capture commands
+		FPlaySceneCommands::Register();
+		PluginCommands = MakeShareable(new FUICommandList);
+
+		// Add play capture button command
+		PluginCommands->MapAction(
+			FPlaySceneCommands::Get().OpenPluginWindow,
+			FExecuteAction::CreateRaw(this, &FPlaySceneModule::PluginButtonClicked),
+			FCanExecuteAction());
+
+		FLevelEditorModule& LevelEditorModule = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
+
+		// Add play capture button to editor
+		{
+			TSharedPtr<FExtender> ToolbarExtender = MakeShareable(new FExtender);
+			ToolbarExtender->AddToolBarExtension("Settings", EExtensionHook::After, PluginCommands, FToolBarExtensionDelegate::CreateRaw(this, &FPlaySceneModule::AddToolbarExtension));
+
+			LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
+		}
+	}
+	else
+	{
+		this->PluginButtonClicked();
 	}
 }
 
 void FPlaySceneModule::ShutdownModule()
 {
-	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
-	// we call this function before unloading the module.
-	FPlaySceneStyle::Shutdown();
+	if (GIsEditor)
+	{
+		// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
+		// we call this function before unloading the module.
+		FPlaySceneStyle::Shutdown();
 
-	FPlaySceneCommands::Unregister();
+		FPlaySceneCommands::Unregister();
+	}
 
 	// Disable PlayScene Window
 	FPlaySceneSlate::Shutdown();
